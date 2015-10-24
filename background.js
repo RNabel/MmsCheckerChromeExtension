@@ -15,7 +15,9 @@ var isModuleLoading = false;
 var newModGrades = {};
 var oldModGrades = {};
 
-function receiveDataContent(content) {
+var popupCallback;
+
+function processMainPageData(content) {
     if (!alreadyProcessedLoginPage) {
         alreadyProcessedLoginPage = true;
         console.log("Got stuff back from page.");
@@ -27,29 +29,20 @@ function receiveDataContent(content) {
             });
 
         // Start requesting the individual modules.
-        requestNextModule();
+        openNextModulePage();
     }
 
 }
 
-function tabCreationCallback(tab) {
-    // Set tabId.
-    tabId = tab.id;
-
-    chrome.tabs.sendMessage(tab.id, {text: "report_back"},
-        receiveDataContent);
-
-}
-
 // Function that opens each module's page, and extracts information.
-function requestNextModule() {
+function openNextModulePage() {
     // Are there modules left to load?
     if (currentModuleInd != moduleLinks.length) {
         isModuleLoading = true;
         var modURL = host + moduleLinks[currentModuleInd++];
 
         console.log("Requesting next module: " + modURL);
-        chrome.tabs.update(tabId, {url: modURL, active: false}, handleModulePageLoad);
+        chrome.tabs.update(tabId, {url: modURL, active: false});
     } else {
         // Finished requesting all modules.
 
@@ -59,18 +52,16 @@ function requestNextModule() {
 
         // TODO compare old and new module grades.
         console.log(newModGrades);
+
+        // Respond to the popup with the modules.
+        popupCallback(newModGrades);
     }
 }
 
-function handleModulePageLoad() {
-    chrome.tabs.sendMessage(tabId, {text: "report_back"},
-        handleModulePageData);
-}
-
-function handleModulePageData(content) {
+function processModulePageData(content) {
     // Extract all coursework entries.
     var tableArray = [];
-    var allInfo = $(content).find("tbody").find("tr")
+    $(content).find("tbody").find("tr")
         .each(function () {
             var arrayOfThisRow = [];
             var tableData = $(this).find('td');
@@ -101,18 +92,54 @@ function handleModulePageData(content) {
     }
 
     // Request next module.
-    requestNextModule();
+    openNextModulePage();
 }
 
-chrome.browserAction.onClicked.addListener(function (activeTab) {
+// Entry point to initiate an update of the grade information.
+function extractGradeInformation(callback) {
     // Reset state relevant for each iteration.
     alreadyProcessedLoginPage = false;
     currentModuleInd = 0;
     moduleLinks = [];
     isModuleLoading = false;
     oldModGrades = newModGrades;
+    newModGrades = {};
+    popupCallback = callback;
 
     // Access mms main page.
     var newURL = host + loginPage;
-    chrome.tabs.create({url: newURL, active: false}, tabCreationCallback);
-});
+    chrome.tabs.create({url: newURL, active: false});
+}
+
+chrome.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+        if (sender.tab) {
+            contentScriptRequestHandler(request, sender, sendResponse);
+            console.log("Request from tab");
+
+        } else if (request.text) {
+            // Request from other script.
+            console.log("Request from popup script.");
+            return popupScriptRequestHandler(request, sender, sendResponse);
+        }
+    });
+
+function contentScriptRequestHandler(request, sender) {
+    // Check what request it is.
+    switch (request.type) {
+        case "main_page_data":
+            tabId = sender.tab.id;
+            processMainPageData(request.data);
+            break;
+        case "module_page_data":
+            processModulePageData(request.data);
+            break;
+    }
+}
+
+function popupScriptRequestHandler(request, sender, sendResponse) {
+    if (request.text == "popup_update_request") {
+        extractGradeInformation(sendResponse);
+        return true;
+    }
+}

@@ -4,19 +4,28 @@
 
 // Used to extract information from relevant tab.
 
+// Static variables
 var callback = null;
-var finishedLoading = true;
+var finishedLoading = false;
 
-/* Listen for messages requesting content of page. */
-chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
-    /* If the received message has the expected format... */
-    if (msg.text && (msg.text == "report_back")) {
-        /* Call the specified callback, passing
-         the web-pages DOM content as argument */
-        if (finishedLoading) {
-            sendResponse(document.documentElement.innerHTML);
-        } else {
-            callback = sendResponse;
-        }
+
+$(document).ready(function () {
+    console.log("Finished.");
+    finishedLoading = true;
+
+    // Detect which kind of page it is.
+    var url = window.location.href;
+    var type = "main_page_data";
+    var data = document.documentElement.innerHTML;
+    if (url.indexOf("mms/module") > -1) {
+        // It is a module page.
+        type = "module_page_data";
     }
+
+    sendMessage({type: type, data: data});
 });
+
+
+function sendMessage(msgObj) {
+    chrome.runtime.sendMessage(msgObj);
+}
