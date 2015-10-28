@@ -4,8 +4,8 @@
 
 var currentModuleInd = 0;
 var moduleLinks = [];
-var host = "https://mms.st-andrews.ac.uk";
-var loginPage = "/mms/user/me/Modules?login_submit=Login";
+var HOST = "https://mms.st-andrews.ac.uk";
+var LOGIN_PAGE = "/mms/user/me/Modules?login_submit=Login";
 
 // If login page open several times, ensures that content is only processed once.
 var alreadyProcessedLoginPage = true;
@@ -14,6 +14,7 @@ var isModuleLoading = false;
 
 var newModGrades = {};
 var oldModGrades = {};
+var modHeaders = []; // The headers of the table on MMS.
 
 var popupCallback;
 
@@ -39,7 +40,7 @@ function openNextModulePage() {
     // Are there modules left to load?
     if (currentModuleInd != moduleLinks.length) {
         isModuleLoading = true;
-        var modURL = host + moduleLinks[currentModuleInd++];
+        var modURL = HOST + moduleLinks[currentModuleInd++];
 
         console.log("Requesting next module: " + modURL);
         chrome.tabs.update(tabId, {url: modURL, active: false});
@@ -53,12 +54,26 @@ function openNextModulePage() {
         // TODO compare old and new module grades.
         console.log(newModGrades);
 
+        // Build return object containing grades and the headers.
+        var returnInformation = {
+            headers : modHeaders,
+            grades: newModGrades
+        };
+
         // Respond to the popup with the modules.
-        popupCallback(newModGrades);
+        popupCallback(returnInformation);
     }
 }
 
 function processModulePageData(content) {
+    // Extract the headers of the table.
+    var headers = [];
+    $(content).find("thead").find("th").each(function () {
+        headers.push($(this).text());
+    });
+
+    modHeaders = headers; // TODO Checking overlap. Should be consistent across modules.
+
     // Extract all coursework entries.
     var tableArray = [];
     $(content).find("tbody").find("tr")
@@ -107,7 +122,7 @@ function extractGradeInformation(callback) {
     popupCallback = callback;
 
     // Access mms main page.
-    var newURL = host + loginPage;
+    var newURL = HOST + LOGIN_PAGE;
     chrome.tabs.create({url: newURL, active: false});
 }
 
@@ -140,6 +155,8 @@ function contentScriptRequestHandler(request, sender) {
 function popupScriptRequestHandler(request, sender, sendResponse) {
     if (request.text == "popup_update_request") {
         extractGradeInformation(sendResponse);
+
+        // Required to keep open the message passing connection.
         return true;
     }
 }
