@@ -1,10 +1,16 @@
-// Copyright (c) 2012 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+/*
+ * Created by Robin Nabel.
+ * This JS script file is bound to the popup.html file. It sends a message to the background script, which in
+ * turn calls the content scripts of various MMS scripts to extract data.
+ */
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Set up "Please wait" spinner.
+    setWaitSpinner(true);
+
     // Send message to the background script.
-    chrome.runtime.sendMessage({text: "popup_update_request"}, handleData);
+    setWaitSpinner(true);
+    //chrome.runtime.sendMessage({text: "popup_update_request"}, handleData);
 });
 
 function handleData(response) {
@@ -37,7 +43,7 @@ function addRow(fieldArr, key) {
         var currentEl = fieldArr[i];
 
         // Insert module name in the first element in the row, if it is the first result for the module.
-        var moduleString = '';
+        var moduleString = '<td class="moduleTitle"></td>';
         if (i == 0) {
             // If first row, then insert the module title.
             moduleString = '<td class="moduleTitle">' + key + '</td>';
@@ -49,8 +55,18 @@ function addRow(fieldArr, key) {
             newRow.append('<td>' + fieldArr[i][j] + '</td>');
         }
 
+        setWaitSpinner(false);
         $("#content").append(newRow);
     }
 
 }
 
+function setWaitSpinner(addSpinner) {
+    // Shows or hides the spinner div.
+    var spinner = $('#spinner');
+    if (addSpinner) {
+        spinner.css('visibility', 'visible');
+    } else {
+        spinner.css('visibility', 'hidden');
+    }
+}

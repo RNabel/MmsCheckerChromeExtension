@@ -1,17 +1,17 @@
 /**
- * Created by rn30 on 22/10/2015.
+ * Created by Robin Nabel on 22/10/2015.
+ * This script is attached to all MMS related websites, and serves as an end-point to requests by the app.
  */
 
-// Used to extract information from relevant tab.
 
-// Static variables
-var callback = null;
-var finishedLoading = false;
+// Global variables.
+var gCallback = null;
+var gFinishedLoading = false;
 
 
 $(document).ready(function () {
     console.log("Finished.");
-    finishedLoading = true;
+    gFinishedLoading = true;
 
     // Detect which kind of page it is.
     var url = window.location.href;

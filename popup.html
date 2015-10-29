@@ -1,11 +1,23 @@
 <!doctype html>
-<html>
-  <head>
+<html xmlns:https="http://www.w3.org/1999/xhtml">
+<head>
     <title>Set Page Color Popup</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="loaders.min.css">
     <script src="popup.js"></script>
     <script src="jquery-2.1.4.min.js"></script>
-  </head>
-  <body>
-    <table id="content"></table>
-  </body>
+    <style>
+        .ball-scale-ripple-multiple>div:nth-child {
+            border-color: black
+        }
+    </style>
+</head>
+<body>
+<div id="spinner" class="loader" style="visibility: hidden; margin: 0 auto;">
+    <div class="loader-inner ball-scale-ripple-multiple"><div></div><div></div><div></div></div>
+    <b>Please wait...</b>
+</div>
+<table id="content" class="table"></table>
+</body>
 </html>
+
